@@ -7,7 +7,7 @@ void Game::InitializeVariables()
 	//Game Logic
 
 	this->points = 0;
-	this->enemySpawnTimerMax = 1000.f;
+	this->enemySpawnTimerMax = 10.f;
 	this->enemySpawnTimer = this->enemySpawnTimerMax;
 	this->maxEnemies = 5;
 }
@@ -40,8 +40,8 @@ void Game::InitEnemies()
 	this->enemy.setPosition(200.f,200.f);
 	this->enemy.setSize(sf::Vector2f(50.f, 50.f));
 	this->enemy.setFillColor(sf::Color::Cyan);
-	this->enemy.setOutlineColor(sf::Color::Green);
-	this->enemy.setOutlineThickness(1.f);
+	//this->enemy.setOutlineColor(sf::Color::Green);
+	//this->enemy.setOutlineThickness(1.f);
 }
 
 //Accessors
@@ -79,6 +79,8 @@ void Game::Update()
 	this->UpdateMousePositions();
 
 	this->UpdateEnemies();
+
+	std::cout << "Enemy count : " << enemies.size() << std::endl;
 }
 
 
@@ -102,6 +104,7 @@ void Game::UpdateMousePositions()
 	*/
 
 	this->mousePosWindow = sf::Mouse::getPosition(*this->window);
+	this->mousePosView = this->window->mapPixelToCoords(this->mousePosWindow);
 }
 
 void Game::SpawnEnemy()
@@ -120,9 +123,14 @@ void Game::SpawnEnemy()
 		0.f
 	);
 
+
 	this->enemy.setFillColor(sf::Color::Green);
 
+	//Spawns the enemy
 	this->enemies.push_back(this->enemy);
+
+	//Remove enemies at the end of the screen
+	
 }
 
 void Game::UpdateEnemies()
@@ -151,9 +159,28 @@ void Game::UpdateEnemies()
 	}
 
 	//Move the enemies
-	for (auto &e : this->enemies)
+	for (int i =0; i < enemies.size(); i++)
 	{
-		e.move(0.f, 1.f);
+		bool deleted = false;
+		this->enemies[i].move(0.f, 1.f);
+
+		//Check if clicked upon
+		if (sf::Mouse::isButtonPressed(sf::Mouse::Left)) 
+		{
+			if (this->enemies[i].getGlobalBounds().contains(this->mousePosView)) 
+			{
+				deleted = true;
+
+				this->points += 10.f;
+			}
+		}
+
+		if (this->enemies[i].getPosition().y > this->window->getSize().y)
+			deleted = true;
+
+		//Delete
+		if(deleted)
+			this->enemies.erase(this->enemies.begin() + i);
 	}
 }
 
