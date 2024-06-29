@@ -10,6 +10,9 @@ void Game::InitializeVariables()
 	this->enemySpawnTimerMax = 10.f;
 	this->enemySpawnTimer = this->enemySpawnTimerMax;
 	this->maxEnemies = 5;
+	this->mouseHeld = false;
+	this->health = 10;
+	this->endGame = false;
 }
 
 void Game::InitWindow()
@@ -27,6 +30,8 @@ Game::Game()
 {
 	this->InitializeVariables();
 	this->InitWindow();
+	this->InitFonts();
+	this->InitText();
 	this->InitEnemies();
 }
 //Destructor
@@ -42,6 +47,21 @@ void Game::InitEnemies()
 	this->enemy.setFillColor(sf::Color::Cyan);
 	//this->enemy.setOutlineColor(sf::Color::Green);
 	//this->enemy.setOutlineThickness(1.f);
+}
+void Game::InitFonts()
+{
+	if (!this->font.loadFromFile("Fonts/Monocraft.ttf")) 
+	{
+		std::cout << "ERROR::GAME::Failed to load font!\n" << std::endl;
+	};
+}
+
+void Game::InitText()
+{
+	this->uiText.setFont(this->font);
+	this->uiText.setCharacterSize(24);
+	this->uiText.setFillColor(sf::Color::White);
+	this->uiText.setString("NONE");
 }
 
 //Accessors
@@ -76,23 +96,19 @@ void Game::Update()
 {
 	this->PollEvents();
 
-	this->UpdateMousePositions();
+	if (this->endGame == false) 
+	{
+		this->UpdateMousePositions();
 
-	this->UpdateEnemies();
+		this->UpdateText();
 
-	std::cout << "Enemy count : " << enemies.size() << std::endl;
+		this->UpdateEnemies();
+	}
+
 }
 
 
 
-void Game::Render()
-{
-	this->window->clear();
-
-	this->RenderEnemies();
-
-	this->window->display();
-}
 
 void Game::UpdateMousePositions()
 {
@@ -117,6 +133,7 @@ void Game::SpawnEnemy()
 		-Sets a random color.
 		-Adds enemy to the vector.
 	*/
+
 
 	this->enemy.setPosition(
 		static_cast<float>(rand() % static_cast<int>(this->window->getSize().x - this->enemy.getSize().x)),
@@ -162,32 +179,81 @@ void Game::UpdateEnemies()
 	for (int i =0; i < enemies.size(); i++)
 	{
 		bool deleted = false;
+
 		this->enemies[i].move(0.f, 1.f);
 
-		//Check if clicked upon
-		if (sf::Mouse::isButtonPressed(sf::Mouse::Left)) 
+		if (this->enemies[i].getPosition().y > this->window->getSize().y) 
 		{
-			if (this->enemies[i].getGlobalBounds().contains(this->mousePosView)) 
-			{
-				deleted = true;
+			this->enemies.erase(this->enemies.begin() + i);
+			this->health -= 1;
+			//End game condition
+			if (this->health <= 0)
+				this->endGame = true;
+		}
+	}
 
-				this->points += 10.f;
+	//Check if clicked upon
+	if (sf::Mouse::isButtonPressed(sf::Mouse::Left))
+	{
+		if (this->mouseHeld == false) 
+		{
+			this->mouseHeld = true;
+			bool deleted = false;
+			for (size_t i = 0; i < this->enemies.size() && deleted == false; i++)
+			{
+				if (this->enemies[i].getGlobalBounds().contains(this->mousePosView))
+				{
+					deleted = true;
+					this->enemies.erase(this->enemies.begin() + i);
+
+					this->points += 10;
+				}
 			}
 		}
-
-		if (this->enemies[i].getPosition().y > this->window->getSize().y)
-			deleted = true;
-
-		//Delete
-		if(deleted)
-			this->enemies.erase(this->enemies.begin() + i);
 	}
+	else
+	{
+		this->mouseHeld = false;
+	}
+
 }
 
-void Game::RenderEnemies()
+void Game::RenderEnemies(sf::RenderTarget& target)
 {
 	for (auto& e : this->enemies)
 	{
-		this->window->draw(e);
+		target.draw(e);
 	}
+}
+
+
+const bool Game::getEndGame() const
+{
+	return this->endGame;
+}
+
+void Game::RenderText(sf::RenderTarget& target)
+{
+	target.draw(this->uiText);
+}
+
+void Game::UpdateText()
+{
+	std::stringstream ss;
+
+	ss << "Points: " << this->points << "\n"
+		<< "Health: " << this->health << "\n";
+
+	this->uiText.setString(ss.str());
+}
+
+void Game::Render()
+{
+	this->window->clear();
+
+	this->RenderEnemies(*this->window);
+
+	this->RenderText(*this->window);
+
+	this->window->display();
 }

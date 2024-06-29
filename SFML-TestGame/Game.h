@@ -3,6 +3,7 @@
 #include <iostream>
 #include <vector>
 #include <ctime>
+#include <sstream>
 
 #include <SFML/Graphics.hpp>
 #include <SFML/System.hpp>
@@ -25,11 +26,19 @@ private:
 	sf::Vector2i mousePosWindow;
 	sf::Vector2f mousePosView;
 
+	//Resources
+	sf::Font font;
+	//Text
+	sf::Text uiText;
+
 	//Game Logic
-	int points;
+	bool endGame;
+	unsigned int points;
+	int health;
 	float enemySpawnTimer;
 	float enemySpawnTimerMax;
 	int maxEnemies;
+	bool mouseHeld;
 
 
 
@@ -40,6 +49,8 @@ private:
 private:
 	void InitializeVariables();
 	void InitWindow();
+	void InitFonts();
+	void InitText();
 	void InitEnemies();
 
 public:
@@ -49,6 +60,7 @@ public:
 
 	//Accessors
 	const bool isRunning() const;
+	const bool getEndGame() const;
 
 	//Functions
 	void SpawnEnemy();
@@ -57,7 +69,10 @@ public:
 	void UpdateMousePositions();
 	void UpdateEnemies();
 	void Update();
-	void RenderEnemies();
+
+	void RenderText(sf::RenderTarget& target);
+	void UpdateText();
+	void RenderEnemies(sf::RenderTarget& target);
 	void Render();
 };
 
